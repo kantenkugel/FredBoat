@@ -28,6 +28,8 @@ package fredboat.api;
 import fredboat.Config;
 import fredboat.FredBoat;
 import fredboat.audio.player.PlayerRegistry;
+import fredboat.feature.Metrics;
+import io.prometheus.client.Counter;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -39,6 +41,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class API {
+
+    private static final Counter apiServed = Counter.build()
+            .name("fredboat_api_served_total")
+            .help("Total api calls served")
+            .labelNames("path")
+            .register();
 
     private static final Logger log = LoggerFactory.getLogger(API.class);
 
@@ -63,6 +71,7 @@ public class API {
         });
 
         Spark.get("/stats", (req, res) -> {
+            apiServed.labels("/stats").inc();
             res.type("application/json");
 
             JSONObject root = new JSONObject();
@@ -100,6 +109,12 @@ public class API {
             response.body(ExceptionUtils.getStackTrace(e));
             response.type("text/plain");
             response.status(500);
+        });
+
+        Metrics.setup();
+        Spark.get("/metrics", (req, resp) -> {
+            apiServed.labels("/metrics").inc();
+            return Metrics.instance().servletGet(req.raw(), resp.raw());
         });
     }
 

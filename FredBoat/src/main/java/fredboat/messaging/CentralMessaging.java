@@ -26,6 +26,7 @@
 package fredboat.messaging;
 
 import fredboat.feature.I18n;
+import io.prometheus.client.Counter;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.MessageBuilder;
@@ -61,6 +62,27 @@ import java.util.function.Consumer;
 public class CentralMessaging {
 
     private static final Logger log = LoggerFactory.getLogger(CentralMessaging.class);
+
+    private static final Counter messagesSent = Counter.build()
+            .name("fredboat_messaging_messages_sent_total")
+            .help("Total amount of messages sent by fredboat")
+            .labelNames("type") //message, file
+            .register();
+
+    private static final Counter messagesEdited = Counter.build()
+            .name("fredboat_messaging_messages_edited_total")
+            .help("Total amount of messages edited by fredboat")
+            .register();
+
+    private static final Counter messagesDeleted = Counter.build()
+            .name("fredboat_messaging_messages_deleted_total")
+            .help("Total amount of messages deleted by fredboat")
+            .register();
+
+    private static final Counter typing = Counter.build()
+            .name("fredboat_messaging_typing_total")
+            .help("Total amount of typing events sent by fredboat")
+            .register();
 
 
     // ********************************************************************************
@@ -228,6 +250,7 @@ public class CentralMessaging {
                     request.onFailure(response);
             }
         }.queue();
+        messagesSent.labels("shardless").inc();
     }
 
     // ********************************************************************************
@@ -397,6 +420,8 @@ public class CentralMessaging {
         } catch (InsufficientPermissionException e) {
             handleInsufficientPermissionsException(channel, e);
         }
+        channel.sendTyping().queue();
+        typing.inc();
     }
 
     //messages must all be from the same channel
@@ -406,6 +431,7 @@ public class CentralMessaging {
             if (channel instanceof TextChannel) {
                 try {
                     ((TextChannel) channel).deleteMessages(messages).queue();
+                    messagesDeleted.inc(messages.size());
                 } catch (InsufficientPermissionException e) {
                     handleInsufficientPermissionsException(channel, e);
                 }
@@ -425,6 +451,7 @@ public class CentralMessaging {
         }
         try {
             channel.deleteMessageById(messageId).queue();
+            messagesDeleted.inc();
         } catch (InsufficientPermissionException e) {
             handleInsufficientPermissionsException(channel, e);
         }
@@ -465,6 +492,7 @@ public class CentralMessaging {
 
         try {
             channel.sendMessage(message).queue(successWrapper, failureWrapper);
+            messagesSent.labels("message").inc();
         } catch (InsufficientPermissionException e) {
             failureWrapper.accept(e);
             if (e.getPermission() == Permission.MESSAGE_EMBED_LINKS) {
@@ -506,6 +534,7 @@ public class CentralMessaging {
             // as it will skip permission checks, since TextChannel does not override that method
             // this is scheduled to be fixed through JDA's message-rw branch
             channel.sendFile(FileUtils.readFileToByteArray(file), file.getName(), message).queue(successWrapper, failureWrapper);
+            messagesSent.labels("file").inc();
         } catch (InsufficientPermissionException e) {
             failureWrapper.accept(e);
             handleInsufficientPermissionsException(channel, e);
@@ -541,6 +570,7 @@ public class CentralMessaging {
 
         try {
             channel.editMessageById(oldMessageId, newMessage).queue(successWrapper, failureWrapper);
+            messagesEdited.inc();
         } catch (InsufficientPermissionException e) {
             failureWrapper.accept(e);
             handleInsufficientPermissionsException(channel, e);

@@ -51,14 +51,15 @@ public class StatsCommand extends Command implements IMaintenanceCommand {
         int hours = (int) ((totalSecs / (60 * 60)) % 24);
         int mins = (int) ((totalSecs / 60) % 60);
         int secs = (int) (totalSecs % 60);
-        
+
+        double commandsExecuted = CommandManager.totalCommandsExecuted.get();
         String str = MessageFormat.format(
                 I18n.get(context, "statsParagraph"),
-                days, hours, mins, secs, CommandManager.commandsExecuted.get() - 1)
+                days, hours, mins, secs, commandsExecuted - 1)
                 + "\n";
 
         str = MessageFormat.format(I18n.get(context, "statsRate"), str,
-                (float) (CommandManager.commandsExecuted.get() - 1) / ((float) totalSecs / (float) (60 * 60)));
+                (float) (commandsExecuted - 1) / ((float) totalSecs / (float) (60 * 60)));
 
         str = str + "\n\n```";
 

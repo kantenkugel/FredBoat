@@ -29,6 +29,7 @@ import fredboat.audio.nas.NativeAudioSendFactory;
 import fredboat.audio.player.LavalinkManager;
 import fredboat.audio.player.PlayerRegistry;
 import fredboat.event.EventLogger;
+import fredboat.event.MetricsListener;
 import fredboat.event.ShardWatchdogListener;
 import fredboat.util.TextUtils;
 import net.dv8tion.jda.core.AccountType;
@@ -73,6 +74,7 @@ public class FredBoatBot extends FredBoat {
                 JDABuilder builder = new JDABuilder(AccountType.BOT)
                         .addEventListener(new EventLogger("216689009110417408"))
                         .addEventListener(shardWatchdogListener)
+                        .addEventListener(MetricsListener.getSingleton())
                         .setToken(Config.CONFIG.getBotToken())
                         .setGame(Game.of(Config.CONFIG.getGame()))
                         .setBulkDeleteSplittingEnabled(true)

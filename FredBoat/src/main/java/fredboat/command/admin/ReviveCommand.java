@@ -32,6 +32,7 @@ import fredboat.commandmeta.abs.Command;
 import fredboat.commandmeta.abs.CommandContext;
 import fredboat.commandmeta.abs.ICommandRestricted;
 import fredboat.perms.PermissionLevel;
+import io.prometheus.client.Counter;
 import net.dv8tion.jda.core.entities.Guild;
 
 /**
@@ -39,6 +40,11 @@ import net.dv8tion.jda.core.entities.Guild;
  * @author frederik
  */
 public class ReviveCommand extends Command implements ICommandRestricted {
+
+    private static final Counter adminRevivesIssued = Counter.build()
+            .name("fredboat_internal_admin_revives_issued_total")
+            .help("Total shard revives issued by admins")
+            .register();
 
     @Override
     public void onInvoke(CommandContext context) {
@@ -61,6 +67,7 @@ public class ReviveCommand extends Command implements ICommandRestricted {
 
         context.replyWithName("Attempting to revive shard " + shardId);
         try {
+            adminRevivesIssued.inc();
             String answer = FredBoat.getInstance(shardId).revive(force);
             context.replyWithName(answer);
         } catch (IndexOutOfBoundsException e) {

@@ -45,6 +45,7 @@ import fredboat.db.DatabaseManager;
 import fredboat.event.EventListenerBoat;
 import fredboat.event.ShardWatchdogListener;
 import fredboat.feature.I18n;
+import fredboat.feature.Metrics;
 import fredboat.shared.constant.DistributionEnum;
 import fredboat.util.AppInfo;
 import fredboat.util.GitRepoState;
@@ -99,6 +100,8 @@ public abstract class FredBoat {
 
     public static void main(String[] args) throws LoginException, IllegalArgumentException, InterruptedException, IOException, UnirestException {
         Runtime.getRuntime().addShutdownHook(new Thread(ON_SHUTDOWN, "FredBoat main shutdownhook"));
+
+        Metrics.setup();
 
         log.info("\n\n" +
                 "  ______            _ ____              _   \n" +
