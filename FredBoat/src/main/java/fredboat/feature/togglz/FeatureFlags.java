@@ -58,6 +58,9 @@ public enum FeatureFlags implements Feature {
 
     @Label("Have a watchdog restart stale shards")
     SHARD_WATCHDOG,
+
+    @Label("Full instrumentation, including multidimensional per command stats")
+    FULL_METRICS,
     ;
 
     public boolean isActive() {

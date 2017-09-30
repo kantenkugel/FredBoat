@@ -168,14 +168,18 @@ public class EventListenerBoat extends AbstractEventListener {
             }
 
             String commandClassName = context.command.getClass().getSimpleName();
-            totalCommandsReceived.labels(commandClassName).inc();
-
-            Histogram.Timer processingTimer = processingTime.labels(commandClassName).startTimer();
+            Histogram.Timer processingTimer = null;
+            if (FeatureFlags.FULL_METRICS.isActive()) {
+                totalCommandsReceived.labels(commandClassName).inc();
+                processingTimer = processingTime.labels(commandClassName).startTimer();
+            }
             try {
                 limitOrExecuteCommand(context);
             } finally {
                 //NOTE: Some commands, like ;;mal, run async and will not reflect the real performance of FredBoat
-                processingTimer.observeDuration();
+                if (FeatureFlags.FULL_METRICS.isActive() && processingTimer != null) {
+                    processingTimer.observeDuration();
+                }
             }
         }
     }
@@ -191,11 +195,16 @@ public class EventListenerBoat extends AbstractEventListener {
 
         }
         if (ratelimiterResult.a) {
-            Histogram.Timer executionTimer = executionTime.labels(context.command.getClass().getSimpleName()).startTimer();
+            Histogram.Timer executionTimer = null;
+            if (FeatureFlags.FULL_METRICS.isActive()) {
+                executionTimer = executionTime.labels(context.command.getClass().getSimpleName()).startTimer();
+            }
             try {
                 CommandManager.prefixCalled(context);
             } finally {
-                executionTimer.observeDuration();
+                if (FeatureFlags.FULL_METRICS.isActive() && executionTimer != null) {
+                    executionTimer.observeDuration();
+                }
             }
         } else {
             String out = I18n.get(context, "ratelimitedGeneralInfo");
