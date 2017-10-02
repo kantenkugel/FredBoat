@@ -58,7 +58,7 @@ import static com.sedmelluq.discord.lavaplayer.tools.io.HttpClientTools.getHeade
  */
 public class HttpSourceManager extends HttpAudioSourceManager {
 
-    private static final Pattern PLAYLIST_PATTERN = Pattern.compile("<a[^>]*href=\"([^\"]*\\.(?:m3u|pls))\">");
+    private static final Pattern PLAYLIST_PATTERN = Pattern.compile("<a[^>]*href=\"([^\"]*\\.(?:m3u|pls))\"");
     private static final Pattern CHARSET_PATTERN = Pattern.compile("\\bcharset=([^\\s;]+)\\b");
 
     private MediaContainerDetectionResult checkHtmlResponse(AudioReference reference, PersistentHttpStream stream, MediaContainerHints hints) {
@@ -66,6 +66,8 @@ public class HttpSourceManager extends HttpAudioSourceManager {
         Matcher mimeMatcher = CHARSET_PATTERN.matcher(hints.mimeType);
         String charset = mimeMatcher.find() ? mimeMatcher.group(1) : null;
         try {
+            //reset position to start of stream to get full html content
+            stream.seek(0L);
             if(charset != null)
                 IOUtils.copy(stream, writer, charset);
             else
@@ -85,15 +87,12 @@ public class HttpSourceManager extends HttpAudioSourceManager {
         if(resolve.startsWith("http")) {
             return new AudioReference(resolve, original.title);
         }
-        if(resolve.startsWith(".") || resolve.startsWith("/")) {
-            try {
-                URL resolved = new URL(new URL(original.identifier), resolve);
-                return new AudioReference(resolved.toString(), original.title);
-            } catch(MalformedURLException e) {
-                throw new FriendlyException("Error resolving relative url of playlist link", FAULT, e);
-            }
+        try {
+            URL resolved = new URL(new URL(original.identifier), resolve);
+            return new AudioReference(resolved.toString(), original.title);
+        } catch(MalformedURLException e) {
+            throw new FriendlyException("Error resolving relative url of playlist link", SUSPICIOUS, e);
         }
-        throw new FriendlyException("URL could not be resolved", COMMON, null);
     }
 
     /*
