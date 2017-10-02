@@ -78,7 +78,7 @@ public class HttpSourceManager extends HttpAudioSourceManager {
         String htmlBody = writer.toString();
         Matcher matcher = PLAYLIST_PATTERN.matcher(htmlBody);
         if(matcher.find()) {
-            return detectContainer(resolve(reference, matcher.group(1)));
+            return detectContainer(resolve(reference, matcher.group(1)), true);
         }
         return null;
     }
@@ -100,7 +100,9 @@ public class HttpSourceManager extends HttpAudioSourceManager {
         and therefore under the Apache 2.0 License.
         A copy of the License file is provided in "ThirdPartyLicenses/APACHE2"
 
-        Changes are surrounded with comments for clarification.
+        Changes:
+         - Added ignoreHtml boolean parameter to detectContainer and detectContainerWithClient
+        Other changes are surrounded with comments for clarification.
      */
     @Override
     public AudioItem loadItem(DefaultAudioPlayerManager manager, AudioReference reference) {
@@ -109,7 +111,7 @@ public class HttpSourceManager extends HttpAudioSourceManager {
             return null;
         }
 
-        return handleLoadResult(detectContainer(httpReference));
+        return handleLoadResult(detectContainer(httpReference, false));
     }
 
     private AudioReference getAsHttpReference(AudioReference reference) {
@@ -121,11 +123,11 @@ public class HttpSourceManager extends HttpAudioSourceManager {
         return null;
     }
 
-    private MediaContainerDetectionResult detectContainer(AudioReference reference) {
+    private MediaContainerDetectionResult detectContainer(AudioReference reference, boolean ignoreHtml) {
         MediaContainerDetectionResult result;
 
         try (HttpInterface httpInterface = getHttpInterface()) {
-            result = detectContainerWithClient(httpInterface, reference);
+            result = detectContainerWithClient(httpInterface, reference, ignoreHtml);
         } catch (IOException e) {
             throw new FriendlyException("Connecting to the URL failed.", SUSPICIOUS, e);
         }
@@ -133,7 +135,7 @@ public class HttpSourceManager extends HttpAudioSourceManager {
         return result;
     }
 
-    private MediaContainerDetectionResult detectContainerWithClient(HttpInterface httpInterface, AudioReference reference) throws IOException {
+    private MediaContainerDetectionResult detectContainerWithClient(HttpInterface httpInterface, AudioReference reference, boolean ignoreHtml) throws IOException {
         try (PersistentHttpStream inputStream = new PersistentHttpStream(httpInterface, new URI(reference.identifier), Long.MAX_VALUE)) {
             int statusCode = inputStream.checkStatusCode();
             String redirectUrl = HttpClientTools.getRedirectLocation(reference.identifier, inputStream.getCurrentResponse());
@@ -150,7 +152,7 @@ public class HttpSourceManager extends HttpAudioSourceManager {
 
             /* START CUSTOM CHANGES */
             MediaContainerDetectionResult detection = MediaContainerDetection.detectContainer(reference, inputStream, hints);
-            if(!detection.isReference() && !detection.isContainerDetected() && hints.mimeType.startsWith("text/html")) {
+            if(!ignoreHtml && !detection.isReference() && !detection.isContainerDetected() && hints.mimeType.startsWith("text/html")) {
                 return checkHtmlResponse(reference, inputStream, hints);
             }
             return detection;
