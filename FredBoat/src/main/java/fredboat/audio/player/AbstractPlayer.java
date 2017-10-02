@@ -46,9 +46,9 @@ import fredboat.audio.queue.AudioTrackContext;
 import fredboat.audio.queue.ITrackProvider;
 import fredboat.audio.queue.SplitAudioTrackContext;
 import fredboat.audio.queue.TrackEndMarkerHandler;
+import fredboat.audio.source.HttpSourceManager;
 import fredboat.audio.source.PlaylistImportSourceManager;
 import fredboat.audio.source.SpotifyPlaylistSourceManager;
-import fredboat.command.music.control.VoteSkipCommand;
 import fredboat.commandmeta.MessagingException;
 import fredboat.shared.constant.DistributionEnum;
 import lavalink.client.player.IPlayer;
@@ -142,7 +142,7 @@ public abstract class AbstractPlayer extends AudioEventAdapterWrapped implements
         if (Config.CONFIG.isHttpEnabled()) {
             //add new source managers above the HttpAudio one, because it will either eat your request or throw an exception
             //so you will never reach a source manager below it
-            mng.registerSourceManager(new HttpAudioSourceManager());
+            mng.registerSourceManager(new HttpSourceManager());
         }
         return mng;
     }
